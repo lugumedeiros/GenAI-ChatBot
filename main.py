@@ -41,10 +41,9 @@ def print_genai(response:gentypes.GenerateContentResponse):
 def main():
     print("Hello from aiagent!")
     parser_args = get_parser_args()
-    print(parser_args)
-    prompt = parser_args.user_prompt
+    messages = [gentypes.Content(role="user", parts=[gentypes.Part(text=parser_args.user_prompt)])]
     client = get_genai_client()
-    response = client.models.generate_content(model=MODEL, contents=prompt)
+    response = client.models.generate_content(model=MODEL, contents=messages)
     print_genai(response)
 
 if __name__ == "__main__":
