@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types as gentypes
+import prompts
 
 load_dotenv()
 def get_genai_key() -> str:
@@ -46,7 +47,7 @@ def main():
     parser_args = get_parser_args()
     messages = [gentypes.Content(role="user", parts=[gentypes.Part(text=parser_args.user_prompt)])]
     client = get_genai_client()
-    response = client.models.generate_content(model=MODEL, contents=messages)
+    response = client.models.generate_content(model=MODEL, contents=messages, config=gentypes.GenerateContentConfig(system_instruction=prompts.system_prompt))
     print_genai(response, verbose=parser_args.verbose)
 
 if __name__ == "__main__":
