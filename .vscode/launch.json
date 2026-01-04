@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["This is a test"]
+            "args": ["what files are in the pkg directory?", "--verbose"]
         }
     ]
 }

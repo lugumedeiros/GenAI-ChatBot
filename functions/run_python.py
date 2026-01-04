@@ -2,6 +2,25 @@ from pathlib import Path
 import os
 import subprocess
 from config import *
+from google.genai import types
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Run a determined python file relative to the working directory with arguments",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="file path path to execute the desired function, relative to the working directory (default is the working directory itself)",
+            ),
+            "args" : types.Schema(
+                type=types.Type.ARRAY,
+                description="Arguments that will be used for the execution of a function",
+            )
+        },
+    ),
+)
 
 def _run_python(path:Path, args):
     command = ["python", path.absolute()]
@@ -22,7 +41,7 @@ def _run_python(path:Path, args):
     return response
 
 
-def run_python_file(working_directory, file_path, args=None):
+def run_python_file(working_directory, file_path=".", args=None):
     file_path_input = file_path
     try:
         working_directory = Path.cwd() / Path(working_directory)

@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types as gentypes
 import prompts
+from functions.get_files_info import schema_get_files_info
 
 load_dotenv()
 def get_genai_key() -> str:
@@ -27,27 +28,42 @@ def get_parser_args() -> argparse.Namespace:
 
 ######################################################
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-2.5-flash-lite"
+available_functions = gentypes.Tool(
+    function_declarations=[schema_get_files_info],
+)
 
 def print_genai(response:gentypes.GenerateContentResponse, verbose=True):
     p_tokens = response.usage_metadata.prompt_token_count
     r_tokens = response.usage_metadata.candidates_token_count
     response_str = response.text
+    output = ""
+    if verbose:
+        output += f"Prompt tokens: {p_tokens}\n" \
+        f"Response tokens: {r_tokens}\n" \
+        
     if r_tokens is None:
         raise RuntimeError("genai request failed, no response token used")
-    output = f"Prompt tokens: {p_tokens}\n" \
-        f"Response tokens: {r_tokens}\n" \
-        f"User prompt: {response_str}"
-    if verbose:
-        print(output)
+    
+    if response.function_calls is not None and len(response.function_calls) > 0:
+        for function in response.function_calls:
+            output += f"Calling function: {function.name}({function.args})\n"
     else:
-        print(response_str)
+        output += f"Response: {response_str}"
+    print(output)
 
 def main():
     parser_args = get_parser_args()
     messages = [gentypes.Content(role="user", parts=[gentypes.Part(text=parser_args.user_prompt)])]
     client = get_genai_client()
-    response = client.models.generate_content(model=MODEL, contents=messages, config=gentypes.GenerateContentConfig(system_instruction=prompts.system_prompt))
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=messages,
+        config=gentypes.GenerateContentConfig(
+            system_instruction=prompts.system_prompt,
+            tools=[available_functions]
+            )
+        )
     print_genai(response, verbose=parser_args.verbose)
 
 if __name__ == "__main__":
