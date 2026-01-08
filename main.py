@@ -107,7 +107,6 @@ def main():
         
         # Add for next iteration
         messages = add_messages_from_response(messages, response)
-    sys.exit(1)
 
 if __name__ == "__main__":
         main()
