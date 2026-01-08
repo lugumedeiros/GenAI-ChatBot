@@ -5,8 +5,13 @@ from google import genai
 from google.genai import types as gentypes
 import prompts
 from functions.get_files_info import schema_get_files_info
+from functions.get_file_content import schema_get_files_content
+from functions.create_files import schema_create_files
+from functions.run_python import schema_run_python_file
+from  functions.call_function import call_function
 
 load_dotenv()
+
 def get_genai_key() -> str:
     genai_key = os.environ.get("GEMINI_API_KEY")
     if genai_key is None:
@@ -28,9 +33,9 @@ def get_parser_args() -> argparse.Namespace:
 
 ######################################################
 
-MODEL = "gemini-2.5-flash-lite"
+MODEL = "gemini-2.5-flash"
 available_functions = gentypes.Tool(
-    function_declarations=[schema_get_files_info],
+    function_declarations=[schema_get_files_info, schema_run_python_file, schema_get_files_content, schema_create_files],
 )
 
 def print_genai(response:gentypes.GenerateContentResponse, verbose=True):
@@ -53,6 +58,17 @@ def print_genai(response:gentypes.GenerateContentResponse, verbose=True):
     print(output)
 
 def main():
+    def raise_if_response_invalid(fcr:gentypes.Content):
+        if (
+            fcr is None
+            or fcr.parts is None
+            or not fcr.parts
+            or fcr.parts[0] is None
+            or fcr.parts[0].function_response is None
+            or fcr.parts[0].function_response.response is None
+        ):
+            raise Exception("a part is none")
+        
     parser_args = get_parser_args()
     messages = [gentypes.Content(role="user", parts=[gentypes.Part(text=parser_args.user_prompt)])]
     client = get_genai_client()
@@ -64,7 +80,14 @@ def main():
             tools=[available_functions]
             )
         )
-    print_genai(response, verbose=parser_args.verbose)
+    if response.function_calls is None:
+        print("BRUH")
+        return
+    
+    for function_call in response.function_calls:
+        function_call_result = call_function(function_call, verbose=parser_args.verbose)
+        raise_if_response_invalid(function_call_result)
+        print(f"-> {function_call_result.parts[0].function_response.response}")
 
 if __name__ == "__main__":
-    main()
+        main()

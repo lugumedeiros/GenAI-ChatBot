@@ -4,7 +4,7 @@ from config import MAX_CHARS_CONTENT
 from google.genai import types
 
 schema_get_files_content = types.FunctionDeclaration(
-    name="get_files_content",
+    name="get_file_content",
     description="Get file contents from the specified file path relative to the working directory",
     parameters=types.Schema(
         type=types.Type.OBJECT,

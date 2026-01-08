@@ -14,13 +14,17 @@ schema_run_python_file = types.FunctionDeclaration(
                 type=types.Type.STRING,
                 description="file path path to execute the desired function, relative to the working directory (default is the working directory itself)",
             ),
-            "args" : types.Schema(
+            "args": types.Schema(
                 type=types.Type.ARRAY,
-                description="Arguments that will be used for the execution of a function",
+                items=types.Schema(
+                    type=types.Type.STRING
+                ),
+                description="Arguments that will be used for the execution of a function"
             )
         },
     ),
 )
+
 
 def _run_python(path:Path, args):
     command = ["python", path.absolute()]
