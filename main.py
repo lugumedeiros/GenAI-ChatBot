@@ -1,5 +1,6 @@
 # Resources ##########################################
 import os
+import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types as gentypes
@@ -69,25 +70,44 @@ def main():
         ):
             raise Exception("a part is none")
         
+    def add_messages_from_response(messages, response):
+        messages.append(
+            gentypes.Content(
+                role="model",
+                parts=response.candidates[0].content.parts
+            )
+        )
+        return messages
+
     parser_args = get_parser_args()
     messages = [gentypes.Content(role="user", parts=[gentypes.Part(text=parser_args.user_prompt)])]
     client = get_genai_client()
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=messages,
-        config=gentypes.GenerateContentConfig(
-            system_instruction=prompts.system_prompt,
-            tools=[available_functions]
+    response = None
+    ## CALL 
+
+    for _ in range(3):
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=messages,
+            config=gentypes.GenerateContentConfig(
+                system_instruction=prompts.system_prompt,
+                tools=[available_functions]
+                )
             )
-        )
-    if response.function_calls is None:
-        print("BRUH")
-        return
-    
-    for function_call in response.function_calls:
-        function_call_result = call_function(function_call, verbose=parser_args.verbose)
-        raise_if_response_invalid(function_call_result)
-        print(f"-> {function_call_result.parts[0].function_response.response}")
+
+        if response.function_calls is None:
+            print("END")
+            exit(0)
+        
+        for function_call in response.function_calls:
+            function_call_result = call_function(function_call, verbose=parser_args.verbose)
+            raise_if_response_invalid(function_call_result)
+            print(f"-> {function_call_result.parts[0].function_response.response}")
+            messages.append(function_call_result)
+        
+        # Add for next iteration
+        messages = add_messages_from_response(messages, response)
+    sys.exit(1)
 
 if __name__ == "__main__":
         main()
